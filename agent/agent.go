@@ -26,8 +26,12 @@ func (a *Agent) SetCurrentFloor(floor int) {
 	a.currentFloor = floor
 }
 
-func (a Agent) GetId() uuid.UUID {
-	return a.id
+func (a Agent) GetFullId() string {
+	return a.id.String()
+}
+
+func (a Agent) GetId() string {
+	return a.id.String()[:5]
 }
 
 func (a Agent) GetCallDirection() elevatorDirections.Direction {
@@ -61,8 +65,12 @@ func (a Agent) GetCurrentFloor() int {
 
 func (a Agent) PrintStatus() {
 	var msg string
-	msg = fmt.Sprintf("   Passenger %v is on floor %v",a.GetId(),a.currentFloor)
+	if a.currentFloor != a.desiredFloor {
+		msg = fmt.Sprintf("   Passenger %v is on floor %v and has %v as the desired floor", a.GetId(), a.currentFloor, a.desiredFloor)
+	} else {
+		msg = fmt.Sprintf("   Passenger %v is on their desired floor", a.GetId())
+	}
 	fmt.Println(msg)
-	msg = fmt.Sprintf("   Passenger %v has %v as the desired floor",a.GetId(),a.desiredFloor)
-	fmt.Println(msg)
+	//msg = fmt.Sprintf("   Passenger %v has %v as the desired floor", a.GetId(), a.desiredFloor)
+	//fmt.Println(msg)
 }

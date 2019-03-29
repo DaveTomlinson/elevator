@@ -17,7 +17,7 @@ func runSimulation(s Simulation) {
 }
 
 func main() {
-	e, err := elevator.New(5)
+	e, err := elevator.New(10)
 	if err != nil {
 		panic(err)
 	}

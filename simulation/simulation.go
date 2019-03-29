@@ -8,49 +8,76 @@ import (
 	"time"
 )
 
-const maxSteps = 1000
+const (
+	maxSteps  = 10000
+	numPeople = 10
+)
 
 type ElevatorSimulation struct {
 	elev     *elevator.Elevator
-	person   *agent.Agent
+	people   []Agent
 	maxFloor int
 	stepNum  int64
 }
 
+type Agent interface {
+	elevator.Agent
+	IsOnDesiredFloor() bool
+	PrintStatus()
+}
+
 func New(e *elevator.Elevator) *ElevatorSimulation {
-	myrand := rand.New(rand.NewSource(time.Now().UnixNano()))
+	myRand := rand.New(rand.NewSource(time.Now().UnixNano()))
 
 	var es ElevatorSimulation
 	es.elev = e
 	es.maxFloor = e.GetMaxFloor()
-	currentFloor := myrand.Intn(es.maxFloor + 1)
-	targetFloor := myrand.Intn(es.maxFloor + 1)
-	for targetFloor == currentFloor {
-		targetFloor = myrand.Intn(es.maxFloor)
+	for i := 0; i < numPeople; i++ {
+		currentFloor := myRand.Intn(es.maxFloor + 1)
+		targetFloor := myRand.Intn(es.maxFloor + 1)
+		for targetFloor == currentFloor {
+			targetFloor = myRand.Intn(es.maxFloor)
+		}
+		es.people = append(es.people, agent.New(currentFloor, targetFloor))
 	}
-	es.person = agent.New(currentFloor, targetFloor)
 	return &es
 }
 
 func (es *ElevatorSimulation) SimulationStep() {
 	es.printStatus()
 
-	es.elev.Board(es.person)
-	if !es.elev.IsInElevator(es.person) {
-		es.elev.CallElevator(es.person)
-
-	} else{
-		es.elev.Exit(es.person)
-	}
+	es.performAgentActions()
 	es.elev.Move()
 	es.stepNum++
 }
 
 func (es *ElevatorSimulation) Done() bool {
-	if es.stepNum >= maxSteps || es.person.IsOnDesiredFloor() {
+	if es.stepNum >= maxSteps || es.isEveryoneOnDesiredFloor() {
 		return true
 	}
 	return false
+}
+
+func (es ElevatorSimulation) isEveryoneOnDesiredFloor() bool {
+	good := true
+	for _, person := range es.people {
+		if !person.IsOnDesiredFloor() {
+			good = false
+		}
+	}
+	return good
+}
+
+func (es *ElevatorSimulation) performAgentActions() {
+	for _, person := range es.people {
+		es.elev.Board(person)
+		if !es.elev.IsInElevator(person) {
+			es.elev.CallElevator(person)
+
+		} else {
+			es.elev.Exit(person)
+		}
+	}
 }
 
 func (es ElevatorSimulation) printStatus() {
@@ -58,5 +85,11 @@ func (es ElevatorSimulation) printStatus() {
 	fmt.Println(msg)
 
 	es.elev.PrintStatus()
-	es.person.PrintStatus()
+	es.printPersonStatus()
+}
+
+func (es ElevatorSimulation) printPersonStatus() {
+	for _, person := range es.people {
+		person.PrintStatus()
+	}
 }
