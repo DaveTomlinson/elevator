@@ -5,9 +5,10 @@ import (
 	"errors"
 	"fmt"
 	"math"
+	"sort"
 )
 
-const Speed = 0.1
+const Speed = 0.5
 
 type Elevator struct {
 	floorQueue    []int
@@ -33,6 +34,7 @@ func New(maxFloor int) (*Elevator, error) {
 	}
 	e.floorTarget = 0
 	e.maxFloor = maxFloor
+	e.direction = elevatorDirections.UP
 	return &e, nil
 }
 
@@ -90,6 +92,7 @@ func (e *Elevator) SetTargetFloor(floor int) {
 		}
 		e.floorQueue = append(e.floorQueue, floor)
 	}
+	e.sortFloors()
 }
 
 func (e Elevator) GetMaxFloor() int {
@@ -115,6 +118,8 @@ func (e Elevator) PrintStatus() {
 	fmt.Println(msg)
 	msg = fmt.Sprintf("   Elevator moving to %v with queue of %v", e.floorTarget, e.floorQueue)
 	fmt.Println(msg)
+	msg = fmt.Sprintf("   Elevator direction %v", e.direction.ToString())
+	fmt.Println(msg)
 }
 
 ///////////////////////////
@@ -122,14 +127,16 @@ func (e Elevator) PrintStatus() {
 ///////////////////////////
 
 func (e *Elevator) nextTargetFloor() {
-	if len(e.floorQueue) > 0 {
+	if len(e.floorQueue) == 1 {
 		e.floorTarget = e.floorQueue[0]
-		if len(e.floorQueue) > 1 {
-			e.floorQueue = e.floorQueue[1:]
-		} else {
-			e.floorQueue = []int{}
-		}
+		e.floorQueue = []int{}
+		return
 	}
+	if len(e.floorQueue) > 1 {
+		e.getNextFloorWithDirection()
+		return
+	}
+	e.floorTarget = 0
 }
 
 func (e *Elevator) isAtAgentFloor(a Agent) bool {
@@ -162,4 +169,45 @@ func (e *Elevator) isAtFloor(floor int) bool {
 
 func (e *Elevator) isAtAgentsTargetFloor(a Agent) bool {
 	return e.isAtFloor(a.GetDesiredFloor())
+}
+
+func (e *Elevator) sortFloors() {
+	sort.Ints(e.floorQueue)
+}
+
+func (e *Elevator) switchDirections() {
+	if e.direction == elevatorDirections.UP {
+		e.direction = elevatorDirections.DOWN
+	} else {
+		e.direction = elevatorDirections.UP
+	}
+}
+
+func (e *Elevator) getNextFloorWithDirection() {
+	needToSwitchDir := true
+	if e.direction == elevatorDirections.DOWN {
+		for i := len(e.floorQueue) - 1; i >= 0; i-- {
+			if float64(e.floorQueue[i]) < e.currentHeight {
+				e.floorQueue[i], e.floorQueue[0] = e.floorQueue[0], e.floorQueue[i]
+				needToSwitchDir = false
+				break
+			}
+		}
+	} else {
+		for i, floor := range e.floorQueue {
+			if float64(floor) > e.currentHeight {
+				e.floorQueue[i], e.floorQueue[0] = e.floorQueue[0], e.floorQueue[i]
+				needToSwitchDir = false
+				break
+			}
+		}
+	}
+
+	if needToSwitchDir {
+		e.switchDirections()
+	}
+
+	e.floorTarget = e.floorQueue[0]
+	e.floorQueue = e.floorQueue[1:]
+	e.sortFloors()
 }

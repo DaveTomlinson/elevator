@@ -9,8 +9,8 @@ import (
 )
 
 const (
-	maxSteps  = 10000
-	numPeople = 10
+	maxSteps  = 1000
+	numPeople = 5
 )
 
 type ElevatorSimulation struct {
